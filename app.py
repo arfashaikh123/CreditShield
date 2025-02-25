@@ -4,8 +4,14 @@ from predict import predict_risk  # Import from predict.py
 import os
 
 app = Flask(__name__)
-CORS(app)  # Allow all origins for testing
-
+CORS(app, resources={
+    r"/predict": {
+        "origins": [
+            "https://creditshield.netlify.app",  # Your Netlify domain
+            "http://localhost:3000"  # For local development
+        ]
+    }
+})
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
