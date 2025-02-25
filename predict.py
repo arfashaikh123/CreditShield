@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for React frontend
 
 # Load the trained model
-MODEL_PATH = "model/xgboost_model.pkl"
+MODEL_PATH = "xgboost_model.pkl"
 model = joblib.load(MODEL_PATH)
 
 @app.route("/predict", methods=["POST"])

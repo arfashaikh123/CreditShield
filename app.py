@@ -11,8 +11,8 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for React frontend
 
 # Load dataset and model
-DATA_PATH = "data/credit_risk_dataset.csv"
-MODEL_PATH = "model/xgboost_model.pkl"
+DATA_PATH = "credit_risk_dataset.csv"
+MODEL_PATH = "xgboost_model.pkl"
 
 # Load or train model
 if not os.path.exists(MODEL_PATH):
