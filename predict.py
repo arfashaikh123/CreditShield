@@ -1,46 +1,40 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
 import pandas as pd
 import joblib
+import os
 
-app = Flask(__name__)
-CORS(app)  # Enable CORS for React frontend
-
-# Load the trained model
-MODEL_PATH = "xgboost_model.pkl"
+# Initialize model
+MODEL_PATH = os.path.join(os.path.dirname(__file__), 'xgboost_model.pkl')
 model = joblib.load(MODEL_PATH)
 
-@app.route("/predict", methods=["POST"])
-def predict():
+def predict_risk(input_data):
     try:
-        # Get input data from the request
-        input_data = request.json
-
-        # Convert input data to DataFrame
+        # Convert input to DataFrame
         input_df = pd.DataFrame([input_data])
-
-        # One-hot encode categorical variables
-        categorical_columns = ['person_home_ownership', 'loan_intent', 'loan_grade', 'cb_person_default_on_file']
-        input_df = pd.get_dummies(input_df, columns=categorical_columns, drop_first=True)
-
-        # Align columns with training data
-        missing_cols = set(model.get_booster().feature_names) - set(input_df.columns)
-        for col in missing_cols:
-            input_df[col] = 0
-        input_df = input_df[model.get_booster().feature_names]
-
-        # Make prediction
-        prediction = model.predict(input_df)
-        proba = model.predict_proba(input_df)[0]
-
-        # Return result
-        return jsonify({
+        
+        # One-hot encoding
+        categorical_cols = [
+            'person_home_ownership', 
+            'loan_intent', 
+            'loan_grade', 
+            'cb_person_default_on_file'
+        ]
+        input_df = pd.get_dummies(input_df, columns=categorical_cols, drop_first=True)
+        
+        # Align columns
+        expected_features = model.get_booster().feature_names
+        for col in expected_features:
+            if col not in input_df.columns:
+                input_df[col] = 0
+                
+        # Predict
+        prediction = model.predict(input_df[expected_features])
+        proba = model.predict_proba(input_df[expected_features])[0]
+        
+        return {
             "prediction": int(prediction[0]),
-            "confidence": float(max(proba)),
+            "confidence": float(proba.max()),
             "risk_level": "High Risk" if prediction[0] == 1 else "Low Risk"
-        })
+        }
+        
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
-
-if __name__ == "__main__":
-    app.run(debug=True)
+        raise RuntimeError(f"Prediction failed: {str(e)}")
